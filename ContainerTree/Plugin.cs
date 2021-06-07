@@ -1,4 +1,5 @@
-﻿using IPA;
+﻿using ContainerTree.Installers;
+using IPA;
 using SiraUtil.Zenject;
 using IPALogger = IPA.Logging.Logger;
 
@@ -11,6 +12,9 @@ namespace ContainerTree
         public Plugin(IPALogger logger, Zenjector zenjector)
         {
             zenjector.UseLogger(logger);
+            zenjector.Install<ContainerTreeCoreInstaller>(Location.App);
+            zenjector.Install<ContainerTreeMenuInstaller>(Location.Menu);
+            zenjector.Install<ContainerTreeGameInstaller>(Location.Menu);
         }
 
         [OnEnable]
