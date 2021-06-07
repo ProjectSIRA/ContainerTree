@@ -1,11 +1,12 @@
 ﻿using ContainerTree.Installers;
 using IPA;
+using SiraUtil.Attributes;
 using SiraUtil.Zenject;
 using IPALogger = IPA.Logging.Logger;
 
 namespace ContainerTree
 {
-    [Plugin(RuntimeOptions.DynamicInit)]
+    [Slog, Plugin(RuntimeOptions.DynamicInit)]
     public class Plugin
     {
         [Init]

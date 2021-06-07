@@ -6,7 +6,8 @@ namespace ContainerTree.Installers
     {
         public override void InstallBindings()
         {
-
+            Container.Bind<TreeBuilder>().AsSingle();
+            Container.BindInterfacesTo<TreeAgent>().AsSingle().CopyIntoAllSubContainers();
         }
     }
 }
