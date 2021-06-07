@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "ContainerTree",
+  "name": "ContainerTree",
+  "author": "Auros",
+  "version": "1.0.0",
+  "description": "Analyzes the Beat Saber Zenject container hierarchy.",
+  "gameVersion": "1.16.2",
+  "dependsOn": {
+    "BSIPA": "^4.1.4",
+    "SiraUtil": "^2.4.0"
+  }
+}
