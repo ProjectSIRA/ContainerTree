@@ -1,6 +1,8 @@
-﻿using SiraUtil.Logging;
+﻿using Newtonsoft.Json;
+using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -8,7 +10,7 @@ using Zenject;
 
 namespace ContainerTree
 {
-    internal class TreeBuilder
+    internal class TreeBuilder : IDisposable
     {
         private readonly SiraLog _siraLog;
         private readonly Assembly _assembly;
@@ -32,7 +34,8 @@ namespace ContainerTree
             }
 
             _siraLog.Debug("Building new SiContainer...");
-            SiContainer siContainer = new(container.Resolve<Context>().gameObject.scene.name, address, installers, FormatContracts(container));
+            GameObject contextGO = container.Resolve<Context>().gameObject;
+            SiContainer siContainer = new($"{contextGO.name} ({contextGO.scene.name})", address, installers, FormatContracts(container));
             _siraLog.Debug("Checking for parent...");
             DiContainer? parent = container.ParentContainers.FirstOrDefault();
             if (parent is not null)
@@ -52,10 +55,49 @@ namespace ContainerTree
             _siContainers.Add(siContainer);
         }
 
-        private static string ContainerAddress(DiContainer container)
+        public SerializedContainer? Serialize()
         {
-            Context context = container.Resolve<Context>();
-            return $"{context.gameObject.scene.name}{TransformPath(context.transform)}";
+            SiContainer? root = _siContainers.FirstOrDefault();
+            if (root is null)
+                return null;
+
+            // Generate serialized containers
+            HashSet<SerializedContainer> containers = new();
+            foreach (var container in _siContainers)
+            {
+                SerializedContainer serializedContainer = new()
+                {
+                    Name = container.Name,
+                    Address = container.Address,
+                    Contracts = container.Contracts.ToArray(),
+                    Installers = container.Installers.Select(i => i.Name).ToArray()
+                };
+                containers.Add(serializedContainer);
+            }
+
+            // Populate children (since we know that the oldest containers will be first, we don't have to reorder the list)
+            for (int i = 0; i < containers.Count; i++)
+            {
+                for (int c = i; c < containers.Count; c++)
+                {
+                    SerializedContainer a = containers.ElementAt(i);
+                    SerializedContainer b = containers.ElementAt(c);
+
+                    if (a == b)
+                        continue;
+
+                    SiContainer bContainer = _siContainers[c];
+                    if (bContainer.Parent is null)
+                        continue;
+
+                    if (a.Address != bContainer.Parent.Address)
+                        continue;
+
+                    a.Children.Add(b);
+                }
+            }
+
+            return containers.First();
         }
 
         private IEnumerable<string> FormatContracts(DiContainer container)
@@ -66,12 +108,28 @@ namespace ContainerTree
                 if (contract.Type.Assembly == _assembly)
                     continue;
 
+                string visualTypeName = RemoveScuff(VisualizedType(contract.Type));
                 if (contract.Identifier is not null)
-                    formattedContracts.Add($"{contract.Type.Name} [{contract.Identifier}]");
+                    formattedContracts.Add($"{visualTypeName} [{contract.Identifier}]");
                 else
-                    formattedContracts.Add(contract.Type.Name);
+                    formattedContracts.Add(visualTypeName);
             }
             return formattedContracts;
+        }
+
+        private static string VisualizedType(Type type)
+        {
+            if (type.IsNested)
+            {
+                return $"{type.DeclaringType.Name}.{type.Name}";
+            }
+            return type.Name;
+        }
+
+        private static string ContainerAddress(DiContainer container)
+        {
+            Context context = container.Resolve<Context>();
+            return $"{context.gameObject.scene.name}{TransformPath(context.transform)}";
         }
 
         private static string TransformPath(Transform currentTransform)
@@ -84,6 +142,25 @@ namespace ContainerTree
             {
                 return TransformPath(currentTransform.parent) + "/" + currentTransform.name;
             }
+        }
+
+        private static string RemoveScuff(string typeName)
+        {
+            if (typeName.Contains("`"))
+            {
+                typeName = typeName.Substring(0, typeName.IndexOf("`"));
+            }
+            return typeName;
+        }
+
+        public void Dispose()
+        {
+            SerializedContainer? container = Serialize();
+            if (container is null)
+                return;
+            
+            string json = JsonConvert.SerializeObject(container);
+            File.WriteAllText("container_tree.json", json);
         }
     }
 }
