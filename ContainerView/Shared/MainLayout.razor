@@ -1,0 +1,38 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="currentTheme" />
+<MudSnackbarProvider />
+<MudDialogProvider />
+
+@code {
+
+    MudTheme currentTheme = new MudTheme
+    {
+        Palette = new Palette
+        {
+            Black = "#1b1b1c",
+            Background = "#2e2e2e",
+            BackgroundGrey = "#545454",
+            Surface = "#3d3d3d",
+            DrawerBackground = "#3d3d3d",
+            DrawerText = "rgba(255,255,255, 0.50)",
+            DrawerIcon = "rgba(255,255,255, 0.50)",
+            AppbarBackground = "#c42929",
+            AppbarText = "rgba(255,255,255, 0.70)",
+            TextPrimary = "rgba(255,255,255, 0.70)",
+            TextSecondary = "rgba(255,255,255, 0.50)",
+            ActionDefault = "#b1adad",
+            ActionDisabled = "rgba(255,255,255, 0.26)",
+            ActionDisabledBackground = "rgba(255,255,255, 0.12)",
+            Divider = "rgba(255,255,255, 0.12)",
+            DividerLight = "rgba(255,255,255, 0.06)",
+            TableLines = "rgba(255,255,255, 0.12)",
+            LinesDefault = "rgba(255,255,255, 0.12)",
+            LinesInputs = "rgba(255,255,255, 0.3)",
+            TextDisabled = "rgba(255,255,255, 0.2)",
+
+            Primary = "#ff8787",
+            Secondary = "#4481C4"
+        }
+    };
+} 
