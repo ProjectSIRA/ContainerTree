@@ -34,6 +34,7 @@ namespace ContainerTree
             _siraLog.Debug($" > Contexts: {contexts.Count()}");
             _siraLog.Debug($" > Installers: {installerTypes.Count}");
             _siraLog.Debug($" > Scene: {_context.gameObject.scene.name}");
+            _siraLog.Debug($" > Parent Containers: {_container.ParentContainers.Select(c => c.GetHashCode().ToString()).Aggregate((a, b) => $"{a}, {b}")}");
             _siraLog.Debug("Generating branch...");
 
             _treeBuilder.Add(_container, installerTypes);

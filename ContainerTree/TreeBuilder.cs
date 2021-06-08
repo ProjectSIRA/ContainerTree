@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 using Zenject;
 
@@ -28,42 +29,26 @@ namespace ContainerTree
             _siraLog.Debug($"Adding new container... {container.GetHashCode()}");
             string address = ContainerAddress(container);
             _siraLog.Debug($"With Address: {address}");
-            SiContainer? potentialParent = _siContainers.FirstOrDefault(si => si.Address == address);
-            if (potentialParent is not null)
+
+            if (SelfContainer(container, installers) is not null)
             {
-                if (potentialParent.Installers.Count() == installers.Count())
-                {
-                    bool differentMatch = false;
-                    for (int i = 0; i < potentialParent.Installers.Count(); i++)
-                    {
-                        if (potentialParent.Installers.ElementAt(i) != installers.ElementAt(i))
-                        {
-                            differentMatch = true;
-                            break;
-                        }
-                    }
-                    if (!differentMatch)
-                    {
-                        _siraLog.Debug("Container already recorded! Skipping...");
-                        return;
-                    }
-                }
+                _siraLog.Debug("Already build container.");
+                return;
             }
 
             _siraLog.Debug("Building new SiContainer...");
-            GameObject contextGO = container.Resolve<Context>().gameObject;
-            SiContainer siContainer = new($"{contextGO.name} ({contextGO.scene.name})", address, installers, FormatContracts(container));
+            Context context = container.Resolve<Context>();
+            GameObject contextGO = context.gameObject;
+            SiContainer siContainer = new($"{contextGO.name} ({contextGO.scene.name})", address, installers, FormatContracts(container), container.GetHashCode());
             _siraLog.Debug("Checking for parent...");
             DiContainer? parent = container.ParentContainers.FirstOrDefault();
             if (parent is not null)
             {
-                _siraLog.Debug("Parent detected, calculating address...");
-                string parentAddress = ContainerAddress(parent);
-                _siraLog.Debug($"Address Found: {parentAddress}");
-                _siraLog.Debug($"Looking for parent SiContainer...");
-                SiContainer parentSi = _siContainers.FirstOrDefault(si => si.Address == parentAddress);
-                _siraLog.Debug($"Parent Status: {parentSi != null}");
-                siContainer.Parent = parentSi;
+                if (context is GameObjectContext)
+                    parent = parent.ParentContainers.First();
+
+                _siraLog.Debug("Parent detected, setting value...");
+                siContainer.Parent = _siContainers.FirstOrDefault(si => si.CID == parent.GetHashCode());
             }
             else
             {
@@ -95,7 +80,7 @@ namespace ContainerTree
             // Populate children (since we know that the oldest containers will be first, we don't have to reorder the list)
             for (int i = 0; i < containers.Count; i++)
             {
-                for (int c = i; c < containers.Count; c++)
+                for (int c = 0; c < containers.Count; c++)
                 {
                     SerializedContainer a = containers.ElementAt(i);
                     SerializedContainer b = containers.ElementAt(c);
@@ -103,11 +88,13 @@ namespace ContainerTree
                     if (a == b)
                         continue;
 
+                    SiContainer aContainer = _siContainers[i];
                     SiContainer bContainer = _siContainers[c];
+
                     if (bContainer.Parent is null)
                         continue;
 
-                    if (a.Address != bContainer.Parent.Address)
+                    if (aContainer.Address + InstallerString(aContainer.Installers) != bContainer.Parent.Address + InstallerString(bContainer.Parent.Installers))
                         continue;
 
                     a.Children.Add(b);
@@ -115,6 +102,42 @@ namespace ContainerTree
             }
 
             return containers.First();
+        }
+
+        private string InstallerString(IEnumerable<Type> installers)
+        {
+            StringBuilder sb = new();
+            foreach (var installer in installers)
+                sb.Append(installer.Name);
+            return sb.ToString();
+        }
+
+        private SiContainer? SelfContainer(DiContainer container, IEnumerable<Type> installers)
+        {
+            string address = ContainerAddress(container);
+            foreach (var potentialParent in _siContainers)
+            {
+                if (potentialParent.Address != address)
+                    continue;
+
+                if (potentialParent.Installers.Count() == installers.Count())
+                {
+                    bool differentMatch = false;
+                    for (int i = 0; i < potentialParent.Installers.Count(); i++)
+                    {
+                        if (potentialParent.Installers.ElementAt(i) != installers.ElementAt(i))
+                        {
+                            differentMatch = true;
+                            break;
+                        }
+                    }
+                    if (differentMatch)
+                        continue;
+
+                    return potentialParent;
+                }
+            }
+            return null;
         }
 
         private IEnumerable<string> FormatContracts(DiContainer container)

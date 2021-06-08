@@ -99,6 +99,7 @@ namespace ContainerTree.Automation
             _lobbyHostGameStateController.StartGame();
             await Task.Delay(1000);
             await WaitUntil(() => SceneManager.GetActiveScene().name == "MainMenu");
+            await Task.Delay(1000);
             Application.Quit();
         }
 
