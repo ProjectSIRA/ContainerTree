@@ -1,4 +1,5 @@
-﻿using Zenject;
+﻿using ContainerTree.Automation;
+using Zenject;
 
 namespace ContainerTree.Installers
 {
@@ -6,7 +7,7 @@ namespace ContainerTree.Installers
     {
         public override void InstallBindings()
         {
-
+            Container.BindInterfacesTo<AutomationPlayer>().AsSingle();
         }
     }
 }

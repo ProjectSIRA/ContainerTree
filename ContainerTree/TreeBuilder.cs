@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using IPA.Utilities;
+using Newtonsoft.Json;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
@@ -27,10 +28,26 @@ namespace ContainerTree
             _siraLog.Debug($"Adding new container... {container.GetHashCode()}");
             string address = ContainerAddress(container);
             _siraLog.Debug($"With Address: {address}");
-            if (_siContainers.Any(si => si.Address == address))
+            SiContainer? potentialParent = _siContainers.FirstOrDefault(si => si.Address == address);
+            if (potentialParent is not null)
             {
-                _siraLog.Debug("Container already detected! Skipping...");
-                return;
+                if (potentialParent.Installers.Count() == installers.Count())
+                {
+                    bool differentMatch = false;
+                    for (int i = 0; i < potentialParent.Installers.Count(); i++)
+                    {
+                        if (potentialParent.Installers.ElementAt(i) != installers.ElementAt(i))
+                        {
+                            differentMatch = true;
+                            break;
+                        }
+                    }
+                    if (!differentMatch)
+                    {
+                        _siraLog.Debug("Container already recorded! Skipping...");
+                        return;
+                    }
+                }
             }
 
             _siraLog.Debug("Building new SiContainer...");
@@ -158,8 +175,13 @@ namespace ContainerTree
             SerializedContainer? container = Serialize();
             if (container is null)
                 return;
-            
-            string json = JsonConvert.SerializeObject(container);
+
+            ContainerRoot root = new()
+            {
+                Root = container,
+                Version = UnityGame.GameVersion.ToString(),
+            };
+            string json = JsonConvert.SerializeObject(root);
             File.WriteAllText("container_tree.json", json);
         }
     }
