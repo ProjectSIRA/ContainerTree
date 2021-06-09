@@ -18,7 +18,7 @@
     @if (ActiveContainers is not null)
     {
         <MudItem xs="12" md="12" sm="12">
-            <MudText Typo="Typo.h4">Available in:</MudText>
+            <MudText Typo="Typo.h4">Available In:</MudText>
         </MudItem>
         @foreach (SerializedContainer container in ActiveContainers)
         {
@@ -59,8 +59,17 @@
 
 @code {
 
-    private string? SelectedVersion { get; set; } = null;
-    private string? SelectedContract { get; set; } = null;
+    private string? _selectedVersion = null;
+    private string? SelectedVersion
+    {
+        get => _selectedVersion;
+        set
+        {
+            _selectedVersion = value;
+            VersionChanged(_selectedVersion);
+        }
+    }
+
     private HashSet<string> Versions { get; set; } = new();
     private HashSet<SerializedContainer>? ActiveContainers { get; set; } = null;
     private HashSet<SerializedContainerData> AllContainers { get; set; } = new();
@@ -82,13 +91,31 @@
 
         if (Versions.Any())
         {
-            string latestVersion = Versions.ElementAt(0);
-            ContainerRoot? root = await Download(latestVersion);
-            if (root is not null)
-            {
-                ReversedContainers = ReverseContainer(root.Root);
-                AllContainers.Add(new(root.Root));
-            }
+            SelectedVersion = Versions.First();
+        }
+    }
+
+    private void VersionChanged(string? newVersion)
+    {
+        if (newVersion is null)
+        {
+            ReversedContainers.Clear();
+            ActiveContainers = null;
+        }
+        Task.Run(DownloadSelectedVersion);
+    }
+
+    private async Task DownloadSelectedVersion()
+    {
+        if (SelectedVersion is null)
+            return;
+
+        ContainerRoot? root = await Download(SelectedVersion);
+        if (root is not null)
+        {
+            ReversedContainers = ReverseContainer(root.Root);
+            AllContainers.Add(new(root.Root));
+            StateHasChanged();
         }
     }
 
