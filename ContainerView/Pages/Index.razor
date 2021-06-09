@@ -1,3 +1,163 @@
 ﻿@page "/"
 
-<h1>Hello, world!</h1>
+@inject HttpClient httpClient
+
+<MudGrid>
+    <MudItem xs="12" md="9" sm="9" />
+    <MudItem xs="12" md="3" sm="3">
+        <MudSelect T="string" @bind-Value="SelectedVersion" Label="Game Version">
+            @foreach (var version in Versions)
+            {
+                <MudSelectItem Value="version" />
+            }
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="12" md="12" sm="12">
+        <MudAutocomplete T="string" Label="Type (Contract)" SearchFunc="@SearchReversedContainers" ResetValueOnEmptyText="true" ValueChanged="@ContractChanged" MaxItems="100" MinCharacters="2" />
+    </MudItem>
+    @if (ActiveContainers is not null)
+    {
+        <MudItem xs="12" md="12" sm="12">
+            <MudText Typo="Typo.h4">Available in:</MudText>
+        </MudItem>
+        @foreach (SerializedContainer container in ActiveContainers)
+        {
+            <MudItem xs="12" md="6" sm="4">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@container.Name</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    @if (container.Installers.Any())
+                    {
+                        <MudCardContent Class="pa-4">
+                            <MudText>Installers:</MudText>
+                            <MudText Typo="Typo.body2">@(container.Installers.Aggregate((a, b) => $"{a}, {b}"))</MudText>
+                        </MudCardContent>
+                    }
+                </MudCard>
+            </MudItem>
+        }
+    }
+    <MudItem xs="12" md="12" sm="12">
+        <MudText Typo="Typo.h4">Dependency Tree:</MudText>
+    </MudItem>
+    <MudItem xs="12" md="12" sm="12">
+        <MudTreeView Items="AllContainers" MaxHeight="500px">
+            <ItemTemplate>
+                <MudTreeViewItem @bind-Expanded="@context.IsExpanded" Items="@context.ContainerItems">
+                    <Content>
+                        <MudText>@context.Container.Name</MudText>
+                    </Content>
+                </MudTreeViewItem>
+            </ItemTemplate>
+        </MudTreeView>
+    </MudItem>
+
+</MudGrid>
+
+@code {
+
+    private string? SelectedVersion { get; set; } = null;
+    private string? SelectedContract { get; set; } = null;
+    private HashSet<string> Versions { get; set; } = new();
+    private HashSet<SerializedContainer>? ActiveContainers { get; set; } = null;
+    private HashSet<SerializedContainerData> AllContainers { get; set; } = new();
+    private Dictionary<string, HashSet<SerializedContainer>> ReversedContainers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        HttpResponseMessage message = await httpClient.GetAsync("https://api.github.com/repos/ProjectSIRA/ContainerTree/contents/Stores?ref=main");
+        if (!message.IsSuccessStatusCode)
+            return;
+
+        GitHubContent[] gitHubContents = (await JsonSerializer.DeserializeAsync<GitHubContent[]>(await message.Content.ReadAsStreamAsync()))!;
+        HashSet<string> versions = new();
+
+        for (int i = gitHubContents.Length - 1; i >= 0; i--)
+            versions.Add(gitHubContents[i].Name.Replace(".json", string.Empty));
+
+        Versions = versions;
+
+        if (Versions.Any())
+        {
+            string latestVersion = Versions.ElementAt(0);
+            ContainerRoot? root = await Download(latestVersion);
+            if (root is not null)
+            {
+                ReversedContainers = ReverseContainer(root.Root);
+                AllContainers.Add(new(root.Root));
+            }
+        }
+    }
+
+    private void ContractChanged(string contract)
+    {
+        if (string.IsNullOrWhiteSpace(contract))
+        {
+            ActiveContainers = null;
+            return;
+        }
+        ActiveContainers = ReversedContainers[contract];
+    }
+
+    private async Task<IEnumerable<string>> SearchReversedContainers(string value)
+    {
+        await Task.CompletedTask;
+        if (string.IsNullOrWhiteSpace(value))
+            return ReversedContainers.Keys;
+        return ReversedContainers.Keys.Where(x => x.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private async Task<ContainerRoot?> Download(string version)
+    {
+        HttpResponseMessage msg = await httpClient.GetAsync($"https://raw.githubusercontent.com/ProjectSIRA/ContainerTree/main/Stores/{version}.json");
+        if (!msg.IsSuccessStatusCode)
+            return null;
+
+        ContainerRoot root = (await JsonSerializer.DeserializeAsync<ContainerRoot>(await msg.Content.ReadAsStreamAsync()))!;
+        return root;
+    }
+
+    private Dictionary<string, HashSet<SerializedContainer>> ReverseContainer(SerializedContainer rootContainer)
+    {
+        Dictionary<string, HashSet<SerializedContainer>> kV = new();
+        void FlipLevelRecursive(SerializedContainer container)
+        {
+            foreach (var contract in container.Contracts)
+            {
+                if (kV.TryGetValue(contract, out HashSet<SerializedContainer>? containerSet))
+                {
+                    if (containerSet is not null)
+                        containerSet.Add(container);
+                }
+                else
+                {
+                    var hs = new HashSet<SerializedContainer>();
+                    kV.Add(contract, hs);
+                    hs.Add(container);
+                }
+            }
+            foreach (var subContainer in container.Children)
+                FlipLevelRecursive(subContainer);
+        }
+        FlipLevelRecursive(rootContainer);
+        return kV;
+    }
+
+    internal class SerializedContainerData
+    {
+        public bool IsExpanded { get; set; } = true;
+        public SerializedContainer Container { get; set; }
+        public bool HasChild => ContainerItems is not null && ContainerItems.Count > 0;
+        public HashSet<SerializedContainerData> ContainerItems { get; set; } = new();
+
+        public SerializedContainerData(SerializedContainer container)
+        {
+            Container = container;
+            foreach (var subContainer in Container.Children)
+                ContainerItems.Add(new(subContainer));
+        }
+    }
+} 
