@@ -16,9 +16,9 @@ namespace ContainerTree
             zenjector.UseLogger(logger);
             zenjector.Install<ContainerTreeCoreInstaller>(Location.App);
 
-            zenjector.Install<ContainerTreeMenuInstaller>(Location.Menu);
-            zenjector.Install(Location.MultiPlayer, Container => Container.BindInterfacesTo<MultiplayerLevelFinisher>().AsSingle());
-            zenjector.Install(Location.StandardPlayer | Location.CampaignPlayer | Location.Tutorial, Container => Container.BindInterfacesTo<StandardLevelFinisher>().AsSingle());
+            //zenjector.Install<ContainerTreeMenuInstaller>(Location.Menu);
+            //zenjector.Install(Location.MultiPlayer, Container => Container.BindInterfacesTo<MultiplayerLevelFinisher>().AsSingle());
+            //zenjector.Install(Location.StandardPlayer | Location.CampaignPlayer | Location.Tutorial, Container => Container.BindInterfacesTo<StandardLevelFinisher>().AsSingle());
         }
 
         [OnEnable]
