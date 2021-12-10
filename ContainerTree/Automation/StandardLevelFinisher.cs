@@ -1,4 +1,5 @@
 ﻿using SiraUtil.Zenject;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ContainerTree.Automation
@@ -12,7 +13,7 @@ namespace ContainerTree.Automation
             _returnToMenuController = returnToMenuController;
         }
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(CancellationToken cancellationToken)
         {
             await Task.Delay(1000);
             _returnToMenuController.ReturnToMenu();

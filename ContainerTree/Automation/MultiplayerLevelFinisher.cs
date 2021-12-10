@@ -1,5 +1,5 @@
-﻿using SiraUtil.Logging;
-using SiraUtil.Zenject;
+﻿using SiraUtil.Zenject;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ContainerTree.Automation
@@ -15,7 +15,7 @@ namespace ContainerTree.Automation
             _multiplayerLocalActivePlayerInGameMenuViewController = multiplayerLocalActivePlayerInGameMenuViewController;
         }
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(CancellationToken cancellationToken)
         {
             while (_audioTimeSource.songTime <= 1f)
                 await Task.Delay(10);

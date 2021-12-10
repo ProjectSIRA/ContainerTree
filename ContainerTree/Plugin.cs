@@ -1,5 +1,4 @@
-﻿using ContainerTree.Automation;
-using ContainerTree.Installers;
+﻿using ContainerTree.Installers;
 using IPA;
 using SiraUtil.Attributes;
 using SiraUtil.Zenject;
