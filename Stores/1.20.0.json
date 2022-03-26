@@ -556,7 +556,7 @@
                 "children": []
             },
             {
-                "name": "SceneContext (GameCore)",
+                "name": "Standard Gameplay (SceneContext, GameCore)",
                 "address": "GameCore/GameCore/SceneContext",
                 "installers": [
                     "EnvironmentSceneSetup",
@@ -757,7 +757,7 @@
                 "children": []
             },
             {
-                "name": "SceneContext (GameCore)",
+                "name": "Mission Gameplay (SceneContext, GameCore)",
                 "address": "GameCore/GameCore/SceneContext",
                 "installers": [
                     "EnvironmentSceneSetup",
@@ -959,7 +959,7 @@
                 "children": []
             },
             {
-                "name": "SceneContext (GameCore)",
+                "name": "Tutorial Gameplay (SceneContext, GameCore)",
                 "address": "GameCore/GameCore/SceneContext",
                 "installers": [
                     "TutorialInstaller",
@@ -1176,7 +1176,7 @@
                 "children": []
             },
             {
-                "name": "SceneContext (GameCore)",
+                "name": "Multiplayer Core (SceneContext, GameCore)",
                 "address": "GameCore/GameCore/SceneContext",
                 "installers": [
                     "EnvironmentSceneSetup",
