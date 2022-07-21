@@ -39,7 +39,7 @@ namespace ContainerTree
             _siraLog.Debug("Building new SiContainer...");
             Context context = container.Resolve<Context>();
             GameObject contextGO = context.gameObject;
-            SiContainer siContainer = new($"{contextGO.name} ({contextGO.scene.name})", address, installers, FormatContracts(container), container.GetHashCode());
+            SiContainer siContainer = new($"{contextGO.name} ({contextGO.scene.name}, {context.GetType().Name})", address, installers, FormatContracts(container), container.GetHashCode());
             _siraLog.Debug("Checking for parent...");
             DiContainer? parent = container.ParentContainers.FirstOrDefault();
             if (parent is not null)
